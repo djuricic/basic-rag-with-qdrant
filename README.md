@@ -66,104 +66,20 @@ ollama pull llama2             # For text generation (adjust as needed)
    ollama list
    ```
 
-## 📋 Dependencies
-
-Create a `requirements.txt` file with these dependencies:
-
-```txt
-qdrant-client>=1.6.0
-requests>=2.31.0
-numpy>=1.24.0
-python-dotenv>=1.0.0
-```
-
-## 🏗️ Project Structure
-
 ```
 basic-rag-with-qdrant/
 ├── README.md
 ├── requirements.txt
-├── data/                    # Document storage
-│   └── documents/
-├── src/
-│   ├── ingest.py           # Document processing and indexing
-│   ├── query.py            # RAG query implementation
-│   ├── utils.py            # Utility functions
-│   └── config.py           # Configuration settings
-├── notebooks/              # Jupyter notebooks for experimentation
-└── tests/                  # Unit tests
-```
+├── main.py
+├── .python-version
+├── .gitignore
 
-## 💻 Usage
 
-### 1. Document Ingestion
 
-First, add your documents to the `data/documents/` directory, then run:
-
-```python
-# ingest.py
-from qdrant_client import QdrantClient
-import requests
-
-# Initialize Qdrant client
-client = QdrantClient(host="localhost", port=6333)
-
-# Create collection if it doesn't exist
-client.create_collection(
-    collection_name="articles",
-    vectors_config=VectorParams(size=1024, distance=Distance.COSINE)
-)
-
-# Process and index documents
-# (Add your document processing logic here)
-```
-
-### 2. Querying the System
-
-```python
-# query.py
-def query_rag_system():
-    prompt = input("Enter a prompt: ")
-    adjusted_prompt = f"Represent this sentence for searching relevant passages: {prompt}"
-    
-    # Generate embeddings
-    response = requests.post(
-        "http://localhost:11434/api/embed",
-        json={"model": "mxbai-embed-large", "input": adjusted_prompt},
-    )
-    embeddings = response.json()["embeddings"][0]
-    
-    # Search for similar chunks
-    results = client.query_points(
-        collection_name="articles",
-        query=embeddings,
-        with_payload=True,
-        limit=2
-    )
-    
-    # Generate response using retrieved context
-    relevant_passages = "\n".join([result.payload["text"] for result in results.points])
-    augmented_prompt = f"""
-    The following are some relevant passages:
-    
-    {relevant_passages}
-    
-    Here is the original user prompt, answer with help of retrieved passages:
-    
-    {prompt}
-    """
-    
-    response = generate_response(augmented_prompt)
-    print("Final RAG Response:", response)
-
-if __name__ == "__main__":
-    query_rag_system()
-```
-
-### 3. Running the System
+### Running the System
 
 ```bash
-python src/query.py
+python main.py
 ```
 
 ## 🔧 Configuration
@@ -186,33 +102,6 @@ EMBEDDING_MODEL = "mxbai-embed-large"
 LLM_MODEL = "llama2"  # or your preferred model
 ```
 
-## 🐛 Debugging
-
-The project includes comprehensive debugging tools to inspect retrieved chunks:
-
-```python
-def print_rag_debug_info(query_results, original_prompt):
-    """Print detailed debugging information about RAG retrieval."""
-    print("\n" + "="*80)
-    print("RAG DEBUGGING INFORMATION")
-    print("="*80)
-    print(f"Original Query: {original_prompt}")
-    print(f"Total Chunks Retrieved: {len(query_results.points)}")
-    
-    for i, result in enumerate(query_results.points, 1):
-        print(f"\n{'='*20} CHUNK {i} {'='*20}")
-        print(f"Similarity Score: {result.score:.6f}")
-        print(f"Point ID: {result.id}")
-        print(f"Content Preview: {result.payload['text'][:200]}...")
-
-# Enable debugging
-DEBUG_RAG = True
-if DEBUG_RAG:
-    print_rag_debug_info(results, prompt)
-```
-
-## 📊 Performance Tuning
-
 ### Adjusting Search Parameters
 
 ```python
@@ -232,59 +121,6 @@ Consider experimenting with different chunk sizes during document processing:
 - **Small chunks (100-200 tokens)**: More precise retrieval, may lack context
 - **Large chunks (500-1000 tokens)**: More context, may include irrelevant information
 - **Overlapping chunks**: Better context preservation across boundaries
-
-## 🚀 Extending the Project
-
-### Adding New Document Types
-
-```python
-def process_pdf(file_path):
-    # Add PDF processing logic
-    pass
-
-def process_docx(file_path):
-    # Add Word document processing logic
-    pass
-```
-
-### Custom Embedding Models
-
-```python
-def get_embeddings(text, model="custom-model"):
-    response = requests.post(
-        f"{OLLAMA_BASE_URL}/api/embed",
-        json={"model": model, "input": text}
-    )
-    return response.json()["embeddings"][0]
-```
-
-### Advanced Filtering
-
-```python
-# Add metadata filtering
-results = client.query_points(
-    collection_name="articles",
-    query=embeddings,
-    query_filter=models.Filter(
-        must=[
-            models.FieldCondition(
-                key="category",
-                match=models.MatchValue(value="technical")
-            )
-        ]
-    ),
-    with_payload=True,
-    limit=5
-)
-```
-
-## 🧪 Testing
-
-Run tests with:
-
-```bash
-python -m pytest tests/
-```
 
 ## 📝 Contributing
 
